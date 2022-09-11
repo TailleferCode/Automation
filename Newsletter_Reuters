@@ -1,0 +1,89 @@
+import win32com.client as win32
+from datetime import datetime
+import os
+from django.shortcuts import HttpResponse
+import pandas as pd
+from pandas import DataFrame
+from newsapi import NewsApiClient
+from datetime import date,timedelta
+import email
+from email import encoders
+from email.mime.base import MIMEBase
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from pretty_html_table import build_table
+newsapi = NewsApiClient(api_key='**********')
+Today=date.today() - timedelta(days=1)
+all_articles = newsapi.get_everything(
+    q='Energy',
+    language='en',
+    sort_by='publishedAt',
+)
+
+all_articles2 = newsapi.get_everything(
+    q='Natural gas',
+    sources='Reuters',
+    language='en',
+    sort_by='publishedAt',
+    from_param=Today,
+)
+
+
+for article in all_articles['articles']:
+   print('Source : ',article['source']['name'])
+   print('Title : ',article['title'])
+   print('url : ', article['url'])
+   print('Description : ',article['description'],'\n\n')
+
+
+for article in all_articles2['articles']:
+   print('Source : ',article['source']['name'])
+   print('Title : ',article['title'])
+   print('url : ', article['url'])
+   print('Description : ',article['description'],'\n\n')
+
+# df=all_articles['articles']
+df = pd.DataFrame(data=all_articles['articles'])
+df1 = pd.DataFrame(data=all_articles2['articles'])
+#df1= pd.DataFrame(data=all_articles2['articles'])
+
+df.pop('source')
+df.pop('author')
+df.pop('content')
+df.pop('urlToImage')
+#print(df)
+df1.pop('source')
+df1.pop('author')
+df1.pop('content')
+df1.pop('urlToImage')
+#print(df1)
+html = df.to_html()
+html1 = df1.to_html()
+#print(html)
+#print(html1)
+#df.to_csv(r'X:\Trading\x-Market Fundamentals\news.NG.csv')
+#df1.to_csv(r'X:\Trading\x-Market Fundamentals\news.LNG.csv')
+
+#df.to_csv(r'C:\Users\qtaillefer\PycharmProjects\pythonProject1\news.NG.csv')
+#df1.to_csv(r'X:\Trading\x-Market Fundamentals\E-Mail Attachments\x-Daily Files\news.LNG.csv')
+
+#send email
+#https://medium.com/mlearning-ai/use-python-to-send-outlook-emails-d673ce9e33e4
+
+outlook = win32.Dispatch('outlook.application')
+mail = outlook.CreateItem(0)
+mail.Subject = 'PSE NEWSLETTER for ' + datetime.now().strftime('%#d %b %Y %H:%M')
+mail.To = "*******"
+#mail.To = "***"
+#thaynes@pacificsummitenergy.com
+mail.HTMLBody = html
+#mail.Attachments.Add(os.getcwd() + "\\news.NG.csv")
+mail.Send()
+
+mail1 = outlook.CreateItem(0)
+mail1.Subject = 'Reuters NEWSLETTER for ' + datetime.now().strftime('%#d %b %Y %H:%M')
+mail1.To = "******* "
+
+mail1.HTMLBody = html1
+#mail.Attachments.Add(os.getcwd() + "\\news.NG.csv")
+mail1.Send()
